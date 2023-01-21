@@ -39,5 +39,5 @@ g = Goal [tt,t]
 -}
 
 -- Main function
-main :: IO ()
-main =  print (pretty empty)
+main :: IO Bool
+main =  testSubst

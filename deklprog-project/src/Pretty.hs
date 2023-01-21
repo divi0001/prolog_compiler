@@ -3,7 +3,6 @@ module Pretty (
   ) where
 
 import Base.Type
-import Subst
 
 class Pretty a where
   pretty :: a -> String
@@ -87,12 +86,7 @@ instance Pretty Goal where
 
 
 
-instance Pretty Subst where
-  pretty (Subst []) = ""
-  pretty (Subst ((v,t):xs)) = "{" ++ intercalate' ", " [genSubst "" (Subst ((v,t):xs))] ++ "}"
-   where
-    genSubst akku (Subst []) = ""
-    genSubst akku (Subst ((v,t):xs)) = genSubst (akku ++ show v ++ " -> " ++ show t ++ pretty (Subst xs)) (Subst xs)
+
 
 
 
