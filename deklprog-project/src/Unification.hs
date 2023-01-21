@@ -8,6 +8,10 @@ module Unification
 
 import Data.Maybe
 
+import Base.Type
+
+import Vars
+
 import Test.QuickCheck
 
 -- Properties
@@ -34,8 +38,16 @@ prop_4 t1 t2 =
   let mMgu = unify t1 t2
   in isJust mMgu ==> let mgu = fromJust mMgu
                      in isNothing (ds (apply mgu t1) (apply mgu t2))
+
+
 -}
 
+-- Does  a variable occur in a term?
+occurs :: VarName -> Term -> Bool
+occurs v t = v `elem` allVars t
+
+
+
 -- Run all tests
-testUnification :: IO ()
+testUnification :: IO Bool
 testUnification = undefined

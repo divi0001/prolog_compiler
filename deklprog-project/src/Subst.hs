@@ -2,19 +2,20 @@
 
 module Subst
   ( Subst, -- don't export the constructor of the data type!
-    -- domain,
-    -- empty,
-    -- single,
-    -- compose,
-    -- apply,
-    -- restrictTo,
+    domain,
+    empty,
+    single,
+    compose,
+    apply,
+    restrictTo,
     testSubst,
   )
 where
 
 import Base.Type
-import Data.List (intercalate, nub, sort)
+import Data.List
 import Test.QuickCheck
+import Vars
 
 -- Data type for substitutions
 data Subst = Subst [(VarName, Term)]
@@ -109,6 +110,65 @@ prop_16 xs s = all (`elem` xs) (domain (restrictTo s xs))
 
 -}
 
+
+domain :: Subst -> [VarName]
+domain (Subst []) = []
+domain (Subst l) = map fst l
+
+restrictTo :: Subst -> [VarName] -> Subst
+restrictTo (Subst []) vl = Subst []
+restrictTo (Subst [(v,t)]) vl = Subst (sus [(v,t)] vl)
+  where
+    sus :: [(VarName, Term)] -> [VarName] -> [(VarName, Term)]
+    sus [] vl = []
+    sus ((v,t):xs) vl = if elem v vl then [(v,t)] ++ sus xs vl else sus xs vl 
+
+
+empty :: Subst
+empty = Subst []
+
+single :: VarName -> Term -> Subst
+single v t = Subst [(v,t)]
+
+isEmpty :: Subst -> Bool
+isEmpty s = if domain s == [] then True else False
+
+
+applySingle :: Subst -> Term -> Term
+applySingle (Subst [(v,t)]) (Var a) = if v == a then t else Var a
+applySingle sub (Comb s []) = Comb s []
+applySingle sub (Comb s (x:xs)) = Comb s ([applySingle sub x] ++ [applySingle sub (Comb s xs)])
+
+
+apply :: Subst -> Term -> Term
+apply (Subst [(v,t)]) term = applySingle (Subst [(v,t)]) term
+apply (Subst ((v,t):xs)) term = apply (Subst xs) (applySingle (Subst [(v,t)]) term)
+
+
+terms :: Subst -> [Term]
+terms (Subst []) = []
+terms (Subst s) = map snd s
+
+subPlus :: Subst -> Subst -> Subst
+subPlus (Subst x) (Subst y) = Subst (x ++ y)
+
+compose :: Subst -> Subst -> Subst
+compose sub1 (Subst []) = sub1
+compose (Subst []) sub2 = sub2
+compose (Subst ((v,t):xs)) sub2 = if v `notElem` allVars(apply sub2 t) then subPlus (Subst [(v, apply sub2 t)]) (compose (Subst xs) sub2) else compose (Subst xs) sub2 
+
+
+{-
+alle Elemente aus sub1 werden nochmal mit sub2 substituiert
+dabei darf sub2 die Elemente nicht zu denen machen, die sie in der (gleich i-ten) Substiution vor dem sub1 waren und
+wir vereinigen mit allen Substitutionen aus sub2 die nicht in domain(sub1) sind.
+-}
+
+
+
+
+
+-- (restrictTo s (allVars t))
 -- Run all tests
-testSubst :: IO ()
+testSubst :: IO Bool
 testSubst = undefined
