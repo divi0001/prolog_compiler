@@ -46,6 +46,10 @@ prop_2 x t = apply (single x t) (Var x) == t
 prop_3 :: Term -> Subst -> Subst -> Bool
 prop_3 t s1 s2 = apply (compose s1 s2) t == apply s1 (apply s2 t)
 
+-- Comb "g" [Var (VarName "B"),Comb "f" []]
+-- Subst [(VarName "B",Var (VarName "B")),(VarName "_0",Var (VarName "_0"))]
+-- Subst [(VarName "_1",Var (VarName "_1")),(VarName "_0",Var (VarName "A"))]
+
 -- The domain of the empty substitution is empty
 prop_4 :: Bool
 prop_4 = null (domain empty)
@@ -69,6 +73,9 @@ prop_8 x1 x2 =
     /= x2
     ==> domain (compose (single x2 (Var x1)) (single x1 (Var x2)))
     == [x2]
+
+-- VarName "A"
+-- VarName "_0"
 
 -- The empty substitution does not contain any variables
 prop_9 :: Bool
@@ -112,9 +119,7 @@ prop_16 :: [VarName] -> Subst -> Bool
 prop_16 xs s = all (`elem` xs) (domain (restrictTo s xs))
 
 
-instance Vars Subst where
-  allVars (Subst []) = []
-  allVars (Subst ((v,t):xs)) = [v] ++ allVars t ++ allVars (Subst xs)
+
 
 
 
@@ -142,54 +147,59 @@ isEmpty :: Subst -> Bool
 isEmpty s = if domain s == [] then True else False
 
 
-applySingle :: Subst -> Term -> Term
-applySingle(Subst []) (Var a) = Var a
-applySingle (Subst [(v,t)]) (Var a) = if v == a then t else Var a
-applySingle sub (Comb s []) = Comb s []
-applySingle sub (Comb s (x:xs)) = Comb s ([applySingle sub x] ++ [applySingle sub (Comb s xs)])
-applySingle _ _ = Var (VarName "")
+-- applySingle :: Subst -> Term -> Term
+-- applySingle(Subst []) (Var a) = Var a
+-- applySingle (Subst [(v,t)]) (Var a) = if v == a then t else Var a
+-- applySingle sub (Comb s []) = Comb s []
+-- applySingle sub (Comb s (x:xs)) = Comb s ([applySingle sub x] ++ [applySingle sub (Comb s xs)])
+-- applySingle _ _ = Var (VarName "")
 
 
-apply :: Subst -> Term -> Term
-apply (Subst []) (Var x) = Var x
-apply (Subst []) (Comb s t) = Comb s t
-apply (Subst [(v,t)]) term = applySingle (Subst [(v,t)]) term
-apply (Subst ((v,t):xs)) term = apply (Subst xs) (applySingle (Subst [(v,t)]) term)
+-- apply :: Subst -> Term -> Term
+-- apply (Subst []) (Var x) = Var x
+-- apply (Subst []) (Comb s t) = Comb s t
+-- apply (Subst [(v,t)]) term = applySingle (Subst [(v,t)]) term
+-- apply (Subst ((v,t):xs)) term = apply (Subst xs) (applySingle (Subst [(v,t)]) term)
 
 
 -- terms :: Subst -> [Term]
 -- terms (Subst []) = []
 -- terms (Subst s) = map snd s
 
-subPlus :: Subst -> Subst -> Subst
-subPlus (Subst x) (Subst y) = Subst (x ++ y)
+-- subPlus :: Subst -> Subst -> Subst
+-- subPlus (Subst x) (Subst y) = Subst (x ++ y)
 
 
 
-composeSingle :: [(VarName, Term)] -> (VarName, Term) -> [(VarName, Term)]
-composeSingle [] _ = []
-composeSingle [(v1,Var t1)] (v2, Var t2) =  if t1 == v2 && v1 /= t2 then [(v1, Var t2)] else []
-composeSingle [(v1,Var t1)] (v2, t2) = if t1 == v2 then [(v1, t2)] else []
-composeSingle [(v1, t1)] (v2, t2) = []
-composeSingle ((v1,Var t1):xs) (v2, Var t2) = if t1 == v2 && v1 /= t2 then [(v1, Var t2)] ++ composeSingle xs (v2,Var t2) else composeSingle xs (v2,Var t2)
-composeSingle ((v1, Var t1):xs) (v2, t2) = if t1 == v2 then [(v1, t2)] ++ composeSingle xs (v2,t2) else composeSingle xs (v2,t2)
-composeSingle ((v1, t1):xs) (v2, t2) = [(v1,t1)] ++ composeSingle xs (v2, t2)
+-- composeSingle :: [(VarName, Term)] -> (VarName, Term) -> [(VarName, Term)]
+-- composeSingle [] _ = []
+-- composeSingle [(v1,Var t1)] (v2, Var t2) =  if t1 == v2 && v1 /= t2 then [(v1, Var t2)] else []
+-- composeSingle [(v1,Var t1)] (v2, t2) = if t1 == v2 then [(v1, t2)] else []
+-- composeSingle [(v1, t1)] (v2, t2) = []
+-- composeSingle ((v1,Var t1):xs) (v2, Var t2) = if t1 == v2 && v1 /= t2 then [(v1, Var t2)] ++ composeSingle xs (v2,Var t2) else composeSingle xs (v2,Var t2)
+-- composeSingle ((v1, Var t1):xs) (v2, t2) = if t1 == v2 then [(v1, t2)] ++ composeSingle xs (v2,t2) else composeSingle xs (v2,t2)
+-- composeSingle ((v1, t1):xs) (v2, t2) = [(v1,t1)] ++ composeSingle xs (v2, t2)
 
 
-domAdd :: Subst -> Subst -> Subst -> Subst 
-domAdd s_fin (Subst []) c1 = s_fin
-domAdd s_fin (Subst [(v,t)]) c1 = if notElem v (domain c1) then subPlus s_fin (Subst [(v,t)]) else s_fin
-domAdd s_fin (Subst ((v,t):xs)) c1 = if notElem v (domain c1) then domAdd (subPlus s_fin (Subst [(v,t)])) (Subst xs) c1 else domAdd s_fin (Subst xs) c1
+-- domAdd :: Subst -> Subst -> Subst -> Subst 
+-- domAdd s_fin (Subst []) c1 = subPlus s_fin c1
+-- domAdd s_fin (Subst [(v,t)]) c1 = if notElem v (domain c1) then subPlus s_fin (Subst [(v,t)]) else s_fin
+-- domAdd s_fin (Subst ((v,t):xs)) c1 = if notElem v (domain c1) then domAdd (subPlus s_fin (Subst [(v,t)])) (Subst xs) c1 else domAdd s_fin (Subst xs) c1
 
 
-compose :: Subst -> Subst -> Subst
-compose s1 s2 = compose_h (Subst []) s1 s2 s2
-  where
-    compose_h :: Subst -> Subst -> Subst -> Subst -> Subst
-    compose_h akku (Subst []) sub2 copys2 = subPlus akku sub2
-    compose_h akku sub1 (Subst []) copys2 = subPlus akku sub1
-    compose_h akku (Subst sub1) (Subst [(v2,t2)]) copys2 = domAdd (subPlus akku (Subst (composeSingle sub1 (v2,t2)))) copys2 (Subst sub1)
-    compose_h akku (Subst sub1) (Subst ((v2,t2):xs2)) copys2 = compose_h  (subPlus akku (Subst (composeSingle sub1 (v2,t2)))) (Subst sub1) (Subst xs2) copys2
+-- compose :: Subst -> Subst -> Subst
+-- compose s1 s2 = compose_h (Subst []) s1 s2 s2
+--   where
+--     compose_h :: Subst -> Subst -> Subst -> Subst -> Subst
+--     compose_h akku (Subst []) sub2 copys2 = subPlus akku sub2
+--     compose_h akku sub1 (Subst []) copys2 = subPlus akku sub1
+--     compose_h akku (Subst sub1) (Subst [(v2,t2)]) copys2 = domAdd (subPlus akku (Subst (composeSingle sub1 (v2,t2)))) copys2 (Subst sub1)
+    -- compose_h akku (Subst sub1) (Subst ((v2,t2):xs2)) copys2 = compose_h  (subPlus akku (Subst (composeSingle sub1 (v2,t2)))) (Subst sub1) (Subst xs2) copys2
+
+
+                          -- sub1           v2          t2
+-- domain (compose (Subst "8" (Var "A")) (Subst "A" (Var "8")))
+
 -- compose (Subst []) sub2 = sub2
 -- compose (Subst ((v,t):xs)) sub2 = if v `notElem` allVars(apply sub2 t) then subPlus (Subst [(v, apply sub2 t)]) (compose (Subst xs) sub2) else compose (Subst xs) sub2
 
@@ -197,11 +207,32 @@ compose s1 s2 = compose_h (Subst []) s1 s2 s2
 {-
 alle Elemente aus sub1 werden nochmal mit sub2 substituiert
 dabei darf sub2 die Elemente nicht zu denen machen, die sie in der (gleich i-ten) Substiution vor dem sub1 waren und
-wir vereinigen mit allen Substitutionen aus sub2 die nicht in domain(sub1) sind.
-
-
+wir vereinigen mit allen Substitutionen aus sub2 die nicht in domain(sub1) sind?
 -}
 
+
+apply :: Subst -> Term -> Term
+apply (Subst []) term                   = term
+apply (Subst (x:xs)) (Var z)            = if fst x == z then snd x else apply (Subst xs) (Var z)
+apply (Subst (x:xs)) (Comb name [])     = Comb name []
+apply (Subst (x:xs)) (Comb name list) = Comb name (map (apply (Subst (x:xs))) list)
+
+
+
+
+isVar :: Term -> Bool
+isVar (Var _) = True
+isVar _       = False
+
+
+
+--         theta    sigma    komp
+compose :: Subst -> Subst -> Subst
+compose (Subst []) (Subst [])         = Subst []
+compose (Subst list) (Subst [])       = Subst list
+compose (Subst []) (Subst list)       = Subst list
+compose (Subst (x:xs)) (Subst (y:ys)) = Subst ([(k, apply (Subst (x:xs)) l) | (k,l) <- y:ys, not (isVar (apply (Subst (x:xs)) (l))) || (isVar (apply (Subst (x:xs)) (l)) && (apply (Subst (x:xs)) (l)) /= Var k), elem (fst y) [fst p | p <- y:ys], elem (snd y) [snd o | o <- y:ys]] 
+                                                  ++ [(n,m) | (n,m) <- x:xs, notElem n (domain (Subst (y:ys)))])
 
 
 intercalate' :: [a] -> [[a]] -> [a]
@@ -209,13 +240,38 @@ intercalate' sep [] = []
 intercalate' sep [x] = x
 intercalate' sep (x : xs) = x ++ sep ++ intercalate' sep xs
 
-instance Pretty Subst where
-  pretty (Subst []) = ""
-  pretty (Subst ((v,t):xs)) = "{" ++ intercalate' ", " [genSubst "" (Subst ((v,t):xs))] ++ "}"
-   where
-    genSubst akku (Subst []) = ""
-    genSubst akku (Subst ((v1,t1):xs1)) = genSubst (akku ++ show v1 ++ " -> " ++ show t1 ++ pretty (Subst xs1)) (Subst xs1)
+-- instance Pretty Subst where
+--   pretty (Subst []) = ""
+--   pretty (Subst ((v,t):xs)) = "{" ++ intercalate' ", " [genSubst "" (Subst ((v,t):xs))] ++ "}"
+--    where
+--     genSubst akku (Subst []) = ""
+--     genSubst akku (Subst ((v1,t1):xs1)) = genSubst (akku ++ show v1 ++ " -> " ++ show t1 ++ pretty (Subst xs1)) (Subst xs1)
 
+
+instance Vars Subst where
+  allVars (Subst []) = []
+  allVars (Subst ((v,t):xs)) = [v] ++ allVars t ++ allVars (Subst xs)
+
+
+instance Pretty Subst where
+  pretty (Subst []) = "{}"
+  pretty (Subst (x:xs)) = "{" ++ intercalate' ", " (rrr [] (x:xs)) ++ "}"
+          where 
+            rrr :: [String] -> [(VarName,Term)] -> [String]
+            rrr akku []               = akku
+            rrr akku ((m, Var n):ms)  = if Var m == Var n then rrr akku ms else rrr (akku ++ [pretty m ++ " -> " ++ pretty n]) ms
+            rrr akku ((m, n):ms)      = rrr (akku ++ [pretty m ++ " -> " ++ pretty n]) ms
+
+
+
+-- prop_8 :: VarName -> VarName -> Property
+-- prop_8 x1 x2 =
+  -- x1
+    -- /= x2
+    -- ==> domain (compose (single x2 (Var x1)) (single x1 (Var x2)))
+    -- == [x2]
+    -- prop_8 "A" "8"
+    
 
 
 -- (restrictTo s (allVars t))

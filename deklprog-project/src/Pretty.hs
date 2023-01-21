@@ -117,3 +117,6 @@ instance Pretty Goal where
 
 "{I -> J, G -> H}"
 -}
+
+instance Pretty VarName where
+  pretty (VarName x) = x
