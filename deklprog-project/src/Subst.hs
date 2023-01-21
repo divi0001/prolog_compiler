@@ -15,6 +15,7 @@ where
 
 import Base.Type
 import Data.List
+import Data.Typeable
 import Test.QuickCheck
 import Vars
 import Pretty
@@ -134,6 +135,7 @@ empty :: Subst
 empty = Subst []
 
 single :: VarName -> Term -> Subst
+single v (Var t) = if v /= t then Subst [(v,Var t)] else Subst []
 single v t = Subst [(v,t)]
 
 isEmpty :: Subst -> Bool
@@ -162,10 +164,43 @@ apply (Subst ((v,t):xs)) term = apply (Subst xs) (applySingle (Subst [(v,t)]) te
 subPlus :: Subst -> Subst -> Subst
 subPlus (Subst x) (Subst y) = Subst (x ++ y)
 
+
+
+composeSingle :: [(VarName, Term)] -> (VarName, Term) -> [(VarName, Term)]
+composeSingle [] _ = []
+composeSingle [(v1,Var t1)] (v2, Var t2) =  if t1 == v2 && v1 /= t2 then [(v1, Var t2)] else []
+composeSingle [(v1,Var t1)] (v2, t2) = if t1 == v2 then [(v1, t2)] else []
+composeSingle [(v1, t1)] (v2, t2) = []
+composeSingle ((v1,Var t1):xs) (v2, Var t2) = if t1 == v2 && v1 /= t2 then [(v1, Var t2)] ++ composeSingle xs (v2,Var t2) else composeSingle xs (v2,Var t2)
+composeSingle ((v1, Var t1):xs) (v2, t2) = if t1 == v2 then [(v1, t2)] ++ composeSingle xs (v2,t2) else composeSingle xs (v2,t2)
+composeSingle ((v1, t1):xs) (v2, t2) = [(v1,t1)] ++ composeSingle xs (v2, t2)
+
+
+domAdd :: Subst -> Subst -> Subst -> Subst 
+domAdd s_fin (Subst []) c1 = s_fin
+domAdd s_fin (Subst [(v,t)]) c1 = if notElem v (domain c1) then subPlus s_fin (Subst [(v,t)]) else s_fin
+domAdd s_fin (Subst ((v,t):xs)) c1 = if notElem v (domain c1) then domAdd (subPlus s_fin (Subst [(v,t)])) (Subst xs) c1 else domAdd s_fin (Subst xs) c1
+
+
 compose :: Subst -> Subst -> Subst
-compose sub1 (Subst []) = sub1
-compose (Subst []) sub2 = sub2
-compose (Subst ((v,t):xs)) sub2 = if v `notElem` allVars(apply sub2 t) then subPlus (Subst [(v, apply sub2 t)]) (compose (Subst xs) sub2) else compose (Subst xs) sub2
+compose s1 s2 = compose_h (Subst []) s1 s2 s2
+  where
+    compose_h :: Subst -> Subst -> Subst -> Subst -> Subst
+    compose_h akku (Subst []) sub2 copys2 = subPlus akku sub2
+    compose_h akku sub1 (Subst []) copys2 = subPlus akku sub1
+    compose_h akku (Subst sub1) (Subst [(v2,t2)]) copys2 = domAdd (subPlus akku (Subst (composeSingle sub1 (v2,t2)))) copys2 (Subst sub1)
+    compose_h akku (Subst sub1) (Subst ((v2,t2):xs2)) copys2 = compose_h  (subPlus akku (Subst (composeSingle sub1 (v2,t2)))) (Subst sub1) (Subst xs2) copys2
+-- compose (Subst []) sub2 = sub2
+-- compose (Subst ((v,t):xs)) sub2 = if v `notElem` allVars(apply sub2 t) then subPlus (Subst [(v, apply sub2 t)]) (compose (Subst xs) sub2) else compose (Subst xs) sub2
+
+
+{-
+alle Elemente aus sub1 werden nochmal mit sub2 substituiert
+dabei darf sub2 die Elemente nicht zu denen machen, die sie in der (gleich i-ten) Substiution vor dem sub1 waren und
+wir vereinigen mit allen Substitutionen aus sub2 die nicht in domain(sub1) sind.
+
+
+-}
 
 
 
@@ -180,14 +215,6 @@ instance Pretty Subst where
    where
     genSubst akku (Subst []) = ""
     genSubst akku (Subst ((v1,t1):xs1)) = genSubst (akku ++ show v1 ++ " -> " ++ show t1 ++ pretty (Subst xs1)) (Subst xs1)
-
-{-
-alle Elemente aus sub1 werden nochmal mit sub2 substituiert
-dabei darf sub2 die Elemente nicht zu denen machen, die sie in der (gleich i-ten) Substiution vor dem sub1 waren und
-wir vereinigen mit allen Substitutionen aus sub2 die nicht in domain(sub1) sind.
--}
-
-
 
 
 
