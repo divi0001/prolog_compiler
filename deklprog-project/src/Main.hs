@@ -3,6 +3,7 @@ module Main (main,t,tt,r,p,g) where
 import Vars
 import Pretty
 import Base.Type
+import Subst
 
 
 
@@ -39,4 +40,4 @@ g = Goal [tt,t]
 
 -- Main function
 main :: IO ()
-main =  print (allVars g)
+main =  print (pretty empty)

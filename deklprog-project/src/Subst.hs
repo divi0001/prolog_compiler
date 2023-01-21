@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Subst
-  ( Subst, -- don't export the constructor of the data type!
+  ( Subst(Subst), -- don't export the constructor of the data type!
     domain,
     empty,
     single,
@@ -109,6 +109,12 @@ prop_16 :: [VarName] -> Subst -> Bool
 prop_16 xs s = all (`elem` xs) (domain (restrictTo s xs))
 
 -}
+
+
+instance Vars Subst where
+  allVars (Subst []) = []
+  allVars (Subst ((v,t):xs)) = [v] ++ allVars t ++ allVars (Subst xs)
+
 
 
 domain :: Subst -> [VarName]

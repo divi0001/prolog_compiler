@@ -43,8 +43,8 @@ prop_4 t1 t2 =
 -}
 
 -- Does  a variable occur in a term?
-occurs :: VarName -> Term -> Bool
-occurs v t = v `elem` allVars t
+-- occurs :: VarName -> Term -> Bool
+-- occurs v t = v `elem` allVars t
 
 
 

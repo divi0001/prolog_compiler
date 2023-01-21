@@ -7,7 +7,7 @@ module Base.Type
     Term (Var, Comb),
     Rule (Rule),
     Prog (Prog),
-    Goal (Goal),
+    Goal (Goal)
   )
 where
 

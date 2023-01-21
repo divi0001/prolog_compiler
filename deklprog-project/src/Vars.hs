@@ -30,6 +30,9 @@ instance Vars Prog where
 instance Vars Goal where
   allVars (Goal []) = []
   allVars (Goal tlist) = notDup (concatMap allVars tlist)
+
+
+
     
 
 

@@ -72,6 +72,7 @@ instance Pretty Prog where
 
 {-
 >>> pretty (Goal [])
+
 "?- ."
 
 >>> pretty (Goal [Comb "=" [Var (VarName "X"), Comb "false" []]])
@@ -87,8 +88,11 @@ instance Pretty Goal where
 
 
 instance Pretty Subst where
-  pretty empty = "{}"
-  pretty (Subst ((v,t):xs)) = y
+  pretty (Subst []) = ""
+  pretty (Subst ((v,t):xs)) = "{" ++ intercalate' ", " [genSubst "" (Subst ((v,t):xs))] ++ "}"
+   where
+    genSubst akku (Subst []) = ""
+    genSubst akku (Subst ((v,t):xs)) = genSubst (akku ++ show v ++ " -> " ++ show t ++ pretty (Subst xs)) (Subst xs)
 
 
 
