@@ -14,6 +14,8 @@ import Vars
 
 import Test.QuickCheck
 
+import Subst
+
 -- Properties
 
 {- Uncomment this to test the properties when all required functions are implemented
@@ -39,8 +41,8 @@ prop_4 t1 t2 =
   in isJust mMgu ==> let mgu = fromJust mMgu
                      in isNothing (ds (apply mgu t1) (apply mgu t2))
 
-
 -}
+
 
 -- Does  a variable occur in a term?
 -- occurs :: VarName -> Term -> Bool
@@ -49,5 +51,6 @@ prop_4 t1 t2 =
 
 
 -- Run all tests
+--im Mattermost stand, dass wir occurs reinkopieren sollen
 testUnification :: IO Bool
 testUnification = undefined

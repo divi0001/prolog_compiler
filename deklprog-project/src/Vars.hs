@@ -29,7 +29,7 @@ instance Vars Prog where
 
 instance Vars Goal where
   allVars (Goal []) = []
-  allVars (Goal tlist) = notDup (concatMap allVars tlist)
+  allVars (Goal tlist) = notDup (concatMap allVars tlist) --concatMap is nice ^^ , notDup makes sure, that we have no duplicates
 
 
 
@@ -48,8 +48,8 @@ zippy list1 (y:list2) = map (:y) list1 ++ zippy list1 list2
 
 
 freshVars :: [VarName]
-freshVars = [VarName x | x <- zippy ['A'..'Z'] ("" : map show [0..])]
+freshVars = [VarName x | x <- zippy ['A'..'Z'] ("" : map show [0..])] --this uses a list comprehension and a function, to zip in the letters and numbers in the right order
 
 notDup :: [VarName] -> [VarName]
 notDup [] = []
-notDup (x:xs) = if notElem x xs then x : notDup xs else notDup xs
+notDup (x:xs) = if notElem x xs then x : notDup xs else notDup xs -- i like notElem :)

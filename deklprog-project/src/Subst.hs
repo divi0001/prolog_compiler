@@ -120,9 +120,9 @@ prop_16 xs s = all (`elem` xs) (domain (restrictTo s xs))
 
 
 
+--um zyklische imports zu vermeiden haben wir uns entschieden, alle instanzen auf den Typen Subst auch in diese Klasse zu schreiben
 
-
-
+--dieser Code Block braucht keine Kommentare oder? Sind immerhin doch recht einfache Funktionen..
 domain :: Subst -> [VarName]
 domain (Subst []) = []
 domain (Subst l) = map fst l
@@ -200,9 +200,6 @@ isEmpty s = if domain s == [] then True else False
                           -- sub1           v2          t2
 -- domain (compose (Subst "8" (Var "A")) (Subst "A" (Var "8")))
 
--- compose (Subst []) sub2 = sub2
--- compose (Subst ((v,t):xs)) sub2 = if v `notElem` allVars(apply sub2 t) then subPlus (Subst [(v, apply sub2 t)]) (compose (Subst xs) sub2) else compose (Subst xs) sub2
-
 
 {-
 alle Elemente aus sub1 werden nochmal mit sub2 substituiert
@@ -210,7 +207,7 @@ dabei darf sub2 die Elemente nicht zu denen machen, die sie in der (gleich i-ten
 wir vereinigen mit allen Substitutionen aus sub2 die nicht in domain(sub1) sind?
 -}
 
-
+--auch Apply nochmal neu geschrieben. map bietet sich immer an, wenn man mit Datenstrukturen mit Listen arbeitet
 apply :: Subst -> Term -> Term
 apply (Subst []) term                   = term
 apply (Subst (x:xs)) (Var z)            = if fst x == z then snd x else apply (Subst xs) (Var z)
@@ -220,22 +217,22 @@ apply (Subst (x:xs)) (Comb name list) = Comb name (map (apply (Subst (x:xs))) li
 
 
 
-isVar :: Term -> Bool
+isVar :: Term -> Bool --prüft ob ein Term eine einzelne Variable ist
 isVar (Var _) = True
 isVar _       = False
 
 
 
 --         theta    sigma    komp
-compose :: Subst -> Subst -> Subst
-compose (Subst []) (Subst [])         = Subst []
+compose :: Subst -> Subst -> Subst -- wir haben erst versucht, das compose über verschachtelte Funktionsaufrufe zu implementieren, das hat aber irgendwie nicht so richtig geklappt (siehe auskommentieren Code oben)
+compose (Subst []) (Subst [])         = Subst [] --deswegen haben wir dann einfach die Mengenschreibweise als Listcomprehension übersetzt, was sich 1 zu 1 übersetzen lässt
 compose (Subst list) (Subst [])       = Subst list
 compose (Subst []) (Subst list)       = Subst list
 compose (Subst (x:xs)) (Subst (y:ys)) = Subst ([(k, apply (Subst (x:xs)) l) | (k,l) <- y:ys, not (isVar (apply (Subst (x:xs)) (l))) || (isVar (apply (Subst (x:xs)) (l)) && (apply (Subst (x:xs)) (l)) /= Var k), elem (fst y) [fst p | p <- y:ys], elem (snd y) [snd o | o <- y:ys]] 
                                                   ++ [(n,m) | (n,m) <- x:xs, notElem n (domain (Subst (y:ys)))])
 
 
-intercalate' :: [a] -> [[a]] -> [a]
+intercalate' :: [a] -> [[a]] -> [a] --from the exercisegroup
 intercalate' sep [] = []
 intercalate' sep [x] = x
 intercalate' sep (x : xs) = x ++ sep ++ intercalate' sep xs
@@ -248,12 +245,12 @@ intercalate' sep (x : xs) = x ++ sep ++ intercalate' sep xs
 --     genSubst akku (Subst ((v1,t1):xs1)) = genSubst (akku ++ show v1 ++ " -> " ++ show t1 ++ pretty (Subst xs1)) (Subst xs1)
 
 
-instance Vars Subst where
+instance Vars Subst where --generates all Variables from a Subst
   allVars (Subst []) = []
   allVars (Subst ((v,t):xs)) = [v] ++ allVars t ++ allVars (Subst xs)
 
 
-instance Pretty Subst where
+instance Pretty Subst where --Pretty instance, we use intercalate for the commas and make it easy with putting the { and } just once, generating the rest in the function rrr
   pretty (Subst []) = "{}"
   pretty (Subst (x:xs)) = "{" ++ intercalate' ", " (rrr [] (x:xs)) ++ "}"
           where 
