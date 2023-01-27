@@ -4,6 +4,7 @@ import Vars
 import Pretty
 import Base.Type
 import Subst
+import Unification
 
 
 
@@ -40,7 +41,7 @@ g = Goal [tt,t]
 
 -- Main function
 main :: IO Bool
-main =  testSubst --runs all Subst tests
+main =  testSubst >> testUnification --runs all Subst tests
 
 --on my local machine, this line gives me an error:
 -- import Text.Parsec hiding (parse)
