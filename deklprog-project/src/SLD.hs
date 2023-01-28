@@ -28,14 +28,14 @@ sld p g = sldHelp p g []
 sldHelp :: Prog -> Goal -> [VarName] -> SLDTree
 sldHelp (Prog []) g vars = SLDTree g []
 sldHelp p (Goal []) vars = SLDTree (Goal []) []
-sldHelp (Prog [Rule r rs]) (Goal [t]) vars = if isJust (unify r t) then SLDTree (Goal []) [(mkUni(unify r t), sldHelp (Prog []) (Goal []) vars)] else SLDTree (Goal [t]) []
+sldHelp (Prog [Rule r rs]) (Goal [t]) vars = if isJust (unify r t) then SLDTree (Goal []) [(mkUni(unify r t), sldHelp (Prog [rename vars (Rule r rs)]) (Goal []) (vars ++ allVars (Rule r rs)))] else SLDTree (Goal [t]) []
 sldHelp (Prog ((Rule r rs):rx)) (Goal (t:ts)) vars =  if isJust (unify r t)
-                                                        then SLDTree (Goal ts) [(mkUni(unify r t), sldHelp (Prog (renameList vars rx)) (Goal ts) (vars ++ allVars (Rule r rs)))] 
-                                                        else sld (Prog rx) (Goal (t:ts))
+                                                        then SLDTree (Goal ts) [(mkUni(unify r t), sldHelp (Prog (renameList vars (Rule r rs:rx))) (Goal ts) (vars ++ allVars (Rule r rs)))] 
+                                                        else sld (Prog (Rule r rs:rx)) (Goal (t:ts))
 
 
 renameList :: [VarName] -> [Rule] -> [Rule]
-renameList vars rs = map (rename (nub(vars ++ concatMap (\r -> allVars r) rs))) rs
+renameList vars r = map (rename vars) r 
 
 mkUni :: Maybe Subst -> Subst
 mkUni (Just s1) = s1
