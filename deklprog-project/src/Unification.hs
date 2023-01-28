@@ -16,6 +16,8 @@ import Test.QuickCheck
 
 import Subst
 
+
+
 -- Properties
 
 --  Uncomment this to test the properties when all required functions are implemented
@@ -59,11 +61,11 @@ ds t1 (Comb st2 []) = if t1 /= Comb st2 [] then Just (t1, Comb st2 []) else Noth
 ds (Comb st1 (x:xs)) (Comb st2 (y:ys)) = if ds x y /= Nothing && x /= y then Just (x, y) else if x == y then Nothing else ds (Comb st1 xs) (Comb st2 ys)
 -}
 
--- ds :: Term -> Term -> Maybe (Term, Term)
--- ds (Var x) (Var y)                        = if x /= y then Just (Var x, Var y) else Nothing
--- ds (Var x) (Comb name term)               = Just (Var x, Comb name term)
--- ds (Comb name term) (Var x)               = Just (Var x, Comb name term)
--- ds (Comb name1 term1) (Comb name2 term2)  = if name1 == name2 && term1 == term2 then Nothing else Just (Comb name1 term1, Comb name2 term2)
+ds :: Term -> Term -> Maybe (Term, Term)
+ds (Var x) (Var y)                        = if x /= y then Just (Var x, Var y) else Nothing
+ds (Var x) (Comb name term)               = Just (Var x, Comb name term)
+ds (Comb name term) (Var x)               = Just (Var x, Comb name term)
+ds (Comb name1 term1) (Comb name2 term2)  = if name1 == name2 && term1 == term2 then Nothing else Just (Comb name1 term1, Comb name2 term2)
 
 -- unify :: Term -> Term -> Maybe Subst
 -- unify t11 t21 = h1 t11 t21 (ds t11 t21) empty 
@@ -87,41 +89,41 @@ ds (Comb st1 (x:xs)) (Comb st2 (y:ys)) = if ds x y /= Nothing && x /= y then Jus
 
 
 
-ds :: Term -> Term -> Maybe (Term, Term)
-ds (Var x) (Var y) = if x == y then Nothing else Just (Var x, Var y)
-ds (Var x) (Comb st2 t2) = if occursfold x t2 then Nothing else Just (Var x, Comb st2 t2)
-ds (Comb st1 t1) (Var y) = if occursfold y t1 then Nothing else Just (Var y, Comb st1 t1)
-ds (Comb st1 t1) (Comb st2 t2)
-  | st1 /= st2 || numOfTerms t1 /= numOfTerms t2 = Just (Comb st1 t1, Comb st2 t2)
-  | st1 == st2
-      &&
-        numOfTerms t1 == numOfTerms t2 && fst (areSomeTermsNotEqual t1 t2 0)
-  = Just (t1 !! snd (areSomeTermsNotEqual t1 t2 0), t2 !! snd (areSomeTermsNotEqual t1 t2 0))
-  | otherwise = Nothing
+-- ds :: Term -> Term -> Maybe (Term, Term)
+-- ds (Var x) (Var y) = if x == y then Nothing else Just (Var x, Var y)
+-- ds (Var x) (Comb st2 t2) = if occursfold x t2 then Nothing else Just (Var x, Comb st2 t2)
+-- ds (Comb st1 t1) (Var y) = if occursfold y t1 then Nothing else Just (Var y, Comb st1 t1)
+-- ds (Comb st1 t1) (Comb st2 t2)
+--   | st1 /= st2 || numOfTerms t1 /= numOfTerms t2 = Just (Comb st1 t1, Comb st2 t2)
+--   | st1 == st2
+--       &&
+--         numOfTerms t1 == numOfTerms t2 && fst (areSomeTermsNotEqual t1 t2 0)
+--   = Just (t1 !! snd (areSomeTermsNotEqual t1 t2 0), t2 !! snd (areSomeTermsNotEqual t1 t2 0))
+--   | otherwise = Nothing
 
-numOfTerms :: [Term] -> Int
-numOfTerms [] = 0
-numOfTerms (_:ts) = 1 + numOfTerms ts
-
-
-occursfold :: VarName -> [Term] -> Bool
-occursfold x1 [] = False
-occursfold x1 [t] = occurs x1 t
-occursfold x1 (t:ts) = occurs x1 t && occursfold x1 ts
+-- numOfTerms :: [Term] -> Int
+-- numOfTerms [] = 0
+-- numOfTerms (_:ts) = 1 + numOfTerms ts
 
 
-areSomeTermsNotEqual :: [Term] -> [Term] -> Int -> (Bool,Int)
-areSomeTermsNotEqual [] t2 i = if t2 /= [] then (True, i) else (False,i)
-areSomeTermsNotEqual t1 [] i = if t1 /= [] then (True, i) else (False,i)
-areSomeTermsNotEqual [Var x] [Var y] i = ((x /= y), i)
-areSomeTermsNotEqual [Comb st1 t1] [Var y] i = (True, i)
-areSomeTermsNotEqual [Var x] [Comb st2 t2] i = (True, i)
-areSomeTermsNotEqual [Comb st1 t1] [Comb st2 t2] i = ((st1 /= st2) && fst (areSomeTermsNotEqual t1 t2 (i+1)), snd (areSomeTermsNotEqual t1 t2 (i+1)))
-areSomeTermsNotEqual ((Var x):ts1) ((Var y):ts2) i = ((x /= y) && fst (areSomeTermsNotEqual ts1 ts2 (i+1)), snd (areSomeTermsNotEqual ts1 ts2 (i+1)))
-areSomeTermsNotEqual ((Var x):ts1) ((Comb st2 t2):ts2) i = (False, i+1)
-areSomeTermsNotEqual ((Comb st1 t1):ts1) ((Var y):ts2) i = (False, i+1)
-areSomeTermsNotEqual ((Comb st1 t1):ts1) ((Comb st2 t2):ts2) i = ((st1 /= st2) && fst (areSomeTermsNotEqual t1 t2 (i+1)) && fst (areSomeTermsNotEqual ts1 ts2 (snd (areSomeTermsNotEqual t1 t2 (i+1))))
-  , i + snd (areSomeTermsNotEqual t1 t2 (i+1)) + snd (areSomeTermsNotEqual ts1 ts2 (snd (areSomeTermsNotEqual t1 t2 (i+1)))) )
+-- occursfold :: VarName -> [Term] -> Bool
+-- occursfold x1 [] = False
+-- occursfold x1 [t] = occurs x1 t
+-- occursfold x1 (t:ts) = occurs x1 t && occursfold x1 ts
+
+
+-- areSomeTermsNotEqual :: [Term] -> [Term] -> Int -> (Bool,Int)
+-- areSomeTermsNotEqual [] t2 i = if t2 /= [] then (True, i) else (False,i)
+-- areSomeTermsNotEqual t1 [] i = if t1 /= [] then (True, i) else (False,i)
+-- areSomeTermsNotEqual [Var x] [Var y] i = ((x /= y), i)
+-- areSomeTermsNotEqual [Comb st1 t1] [Var y] i = (True, i)
+-- areSomeTermsNotEqual [Var x] [Comb st2 t2] i = (True, i)
+-- areSomeTermsNotEqual [Comb st1 t1] [Comb st2 t2] i = ((st1 /= st2) && fst (areSomeTermsNotEqual t1 t2 (i+1)), snd (areSomeTermsNotEqual t1 t2 (i+1)))
+-- areSomeTermsNotEqual ((Var x):ts1) ((Var y):ts2) i = ((x /= y) && fst (areSomeTermsNotEqual ts1 ts2 (i+1)), snd (areSomeTermsNotEqual ts1 ts2 (i+1)))
+-- areSomeTermsNotEqual ((Var x):ts1) ((Comb st2 t2):ts2) i = (False, i)
+-- areSomeTermsNotEqual ((Comb st1 t1):ts1) ((Var y):ts2) i = (False, i)
+-- areSomeTermsNotEqual ((Comb st1 t1):ts1) ((Comb st2 t2):ts2) i = ((st1 /= st2) && fst (areSomeTermsNotEqual t1 t2 (i+1)) && fst (areSomeTermsNotEqual ts1 ts2 (snd (areSomeTermsNotEqual t1 t2 (i+1))))
+--   , i - snd (areSomeTermsNotEqual t1 t2 (i+1)) + snd (areSomeTermsNotEqual ts1 ts2 (snd (areSomeTermsNotEqual t1 t2 (i+1)))))
 
 
 -- unify :: Term -> Term -> Maybe Subst

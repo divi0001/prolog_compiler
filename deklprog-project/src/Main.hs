@@ -38,9 +38,11 @@ g = Goal [tt,t]
 
 
 -}
-
+--f(f( ,B))
+--f(g(g(),_0))
 -- Main function
 main :: IO Bool
+-- main = print( unify (Comb "f" [Comb "f" [],Var (VarName "B")]) (Comb "f" [Comb "g" [Comb "g" []],Var (VarName "_0")]))
 main =  testSubst >> testUnification --runs all Subst tests
 
 --on my local machine, this line gives me an error:
