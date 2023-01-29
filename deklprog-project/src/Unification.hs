@@ -174,3 +174,5 @@ isVar _ = False
 return [] --sehe ich das richtig, dass das return [] die main monade escaped und daher defs mit seiteneffekten möglich werden, oder warum ist das return da? Die Fehlermeldung hilft mir nicht wirklich, wenn ich es nicht tue. Außer dass ich mir dachte, dass das not used daher kommt, dass die funktion nie in der main monade ankommt? VERWIRRUNG
 testUnification :: IO Bool
 testUnification = $quickCheckAll
+
+--btw ihr könnt meinen Progress auch live mitstalken auf github xD https://github.com/divi0001/prolog_compiler
