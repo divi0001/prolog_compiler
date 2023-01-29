@@ -73,12 +73,12 @@ bigProg = Prog [
                 [(Comb "ehemann" [ Var (VarName "Tante"),Var (VarName "O")]), (Comb "geschwister" [ Var (VarName "O"),Var (VarName "V")]), (Comb "vater" [ Var (VarName "Person"),Var (VarName "V")])])
 
                 ]
-p :: Either String a
+
 p = parseFile "D:\\Users\\Riegel\\Desktop\\UNI\\Uni_IDE\\VISUALSTUDIOCODE\\semester_3\\deklProg\\prolog\\8\\8.1.pl"
 
 -- Main function
 main :: IO ()
-main = print(p)
+main = print (parseFile "D:\\Users\\Riegel\\Desktop\\UNI\\Uni_IDE\\VISUALSTUDIOCODE\\semester_3\\deklProg\\prolog\\8\\8.1.pl")
 
 -- main = print( unify (Comb "f" [Comb "f" [],Var (VarName "B")]) (Comb "f" [Comb "g" [Comb "g" []],Var (VarName "_0")]))
 -- main =  testSubst >> testUnification --runs all Subst tests
