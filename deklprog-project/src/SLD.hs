@@ -125,20 +125,18 @@ isTListEq :: [SLDTree] -> [SLDTree] -> Bool
 isTListEq [] [] = True
 isTListEq [t] [t1] = isTreeEq t t1
 isTListEq (t:ts) (t1:ts1) = isTreeEq t t1 && isTListEq ts ts1
-isTListEq _ _ = False
+
 
 isTreeEq :: SLDTree -> SLDTree -> Bool
 isTreeEq (SLDTree g (t:ts)) (SLDTree g1 (t1:ts1)) = isGoalEq g g1 && fst t == fst t1 && isTListEq (allTrees (SLDTree g (t:ts))) (allTrees (SLDTree g1 (t1:ts1)))
-isTreeEq _ _ = False
 
 isGoalEq :: Goal -> Goal -> Bool
 isGoalEq (Goal [t]) (Goal [t1]) = t == t1
-isGoalEq _ _ = False
 
--- treeElem :: SLDTree -> [SLDTree] -> Bool
--- treeElem _ [] = False
--- treeElem t [t1] = isTreeEq t t1
--- treeElem t (t1:ts) = isTreeEq t t1 && treeElem t ts
+treeElem :: SLDTree -> [SLDTree] -> Bool
+treeElem t [] = False
+treeElem t [t1] = isTreeEq t t1
+treeElem t (t1:ts) = isTreeEq t t1 && treeElem t ts
 
 
 -- isEl :: (Eq SLDTree) => SLDTree -> [SLDTree] -> Bool
@@ -159,7 +157,7 @@ dfsHelp (SLDTree g ((sub1,t1):ts)) visited todo = if (hasValidSubTrees (SLDTree 
                                                   else if ismt g 
                                                   then [composeSubsts (SLDTree g ((sub1,t1):ts)) (findIndex (SLDTree g ((sub1,t1):ts)) visited 0)] ++ dfsHelp (last todo) visited (reverse (tail (reverse todo)))
                                                   else dfsHelp (last todo) visited (reverse (tail (reverse todo)))
-dfsHelp _ _ _ = []
+
 
 
 bfs :: Strategy
@@ -171,7 +169,7 @@ bfsHelp (SLDTree g ((sub1,t1):ts)) visited todo = if (hasValidSubTrees (SLDTree 
                                                   else if ismt g 
                                                   then [composeSubsts (SLDTree g ((sub1,t1):ts)) (findIndex (SLDTree g ((sub1,t1):ts)) visited 0)] ++ dfsHelp (last todo) visited  (tail (reverse todo))
                                                   else dfsHelp (last todo) visited (reverse (tail (reverse todo)))
-bfsHelp _ _ _ = []
+
 
 
 solveWith :: Prog -> Goal -> Strategy -> [Subst]
