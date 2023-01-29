@@ -22,7 +22,8 @@ import Pretty
 
 -- Data type for substitutions
 data Subst = Subst [(VarName, Term)]
-  deriving (Show)
+  deriving (Show,Eq)
+
 
 -- Generator for substitutions
 instance Arbitrary Subst where

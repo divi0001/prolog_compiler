@@ -1,27 +1,12 @@
-module Main (main,t,tt,r,p,g) where
+module Main (main,) where
 
 import Vars
 import Pretty
 import Base.Type
 import Subst
 import Unification
-
-
-
-t :: Term
-t = Var (VarName "hi")
-
-tt :: Term
-tt = Comb "f" [Comb "1" [], Comb "h" [Comb "g" [Var (VarName "B")], Comb "[]" []]]
-
-r :: Rule
-r = Rule t [tt,t,tt,t]
-
-p :: Prog
-p = Prog [r,r,r]
-
-g :: Goal
-g = Goal [tt,t]
+import Base.Parser
+import SLD
 
 
 {-
@@ -88,21 +73,12 @@ bigProg = Prog [
                 [(Comb "ehemann" [ Var (VarName "Tante"),Var (VarName "O")]), (Comb "geschwister" [ Var (VarName "O"),Var (VarName "V")]), (Comb "vater" [ Var (VarName "Person"),Var (VarName "V")])])
 
                 ]
-
+p :: Either String a
+p = parseFile "D:\\Users\\Riegel\\Desktop\\UNI\\Uni_IDE\\VISUALSTUDIOCODE\\semester_3\\deklProg\\prolog\\8\\8.1.pl"
 
 -- Main function
-main :: IO Bool
-main = undefined
+main :: IO ()
+main = print(p)
 
 -- main = print( unify (Comb "f" [Comb "f" [],Var (VarName "B")]) (Comb "f" [Comb "g" [Comb "g" []],Var (VarName "_0")]))
 -- main =  testSubst >> testUnification --runs all Subst tests
-
---on my local machine, this line gives me an error:
--- import Text.Parsec hiding (parse)
--- Could not load module ‘Text.Parsec’
--- It is a member of the hidden package ‘parsec-3.1.15.0’.
--- You can run ‘:set -package parsec’ to expose it.
--- (Note: this unloads all the modules in the current scope.)not found
-
---though this throws no error when compiling, not even a warning and everything runs just fine. Since i am not allowed to edit the Base Folder, ill just leave it like that for now
--- (in Base.Parser.hs)
