@@ -63,7 +63,7 @@ ds (Comb st1 (x:xs)) (Comb st2 (y:ys)) = if ds x y /= Nothing && x /= y then Jus
 
 ds :: Term -> Term -> Maybe (Term, Term)
 ds (Var x) (Var y)                        = if x /= y then Just (Var x, Var y) else Nothing
-ds (Var x) (Comb name term)               = Just (Var x, Comb name term)
+ds (Var x) (Comb name term)               = Just (Var x, Comb name term) --basic pattern match, exakt nach skript definieren geht nicht so super gut, wie man oben sieht, weil der algorithmus im skript eher imperativ def ist
 ds (Comb name term) (Var x)               = Just (Var x, Comb name term)
 ds (Comb name1 term1) (Comb name2 term2)  = if name1 == name2 && term1 == term2 then Nothing else Just (Comb name1 term1, Comb name2 term2)
 
@@ -148,16 +148,16 @@ unify t111 t211 = unifyh t111 t211 empty
     unifyh (Comb st1 t1) (Comb st2 t2) akku
       | ds (Comb st1 t1) (Comb st2 t2) == Nothing = Just akku
       | isVar (fst (fromJust (ds (apply akku (Comb st1 t1)) (apply akku (Comb st2 t2))))) && helpOcc (Comb st1 t1) (Comb st2 t2) = Just (help (Comb st1 t1) (Comb st2 t2) akku)
-      | otherwise = Nothing
+      | otherwise = Nothing --unify so weit wie möglich nach skript def
 
 help :: Term -> Term -> Subst -> Subst
-help t1 t2 sub = if isVar (fst (fromJust (ds (apply sub t1) (apply sub t2)))) && helpOcc t1 t2 then compose sub (mkSub t1 t2) else empty --richtige Reihenfolge yay :D
+help t1 t2 sub = if isVar (fst (fromJust (ds (apply sub t1) (apply sub t2)))) && helpOcc t1 t2 then compose sub (mkSub t1 t2) else empty --richtige Reihenfolge yay :D (entscheidet und composed substs, wenn unifizierbar)
 
 mkSub :: Term -> Term -> Subst
 mkSub (Var x) t2 = single x t2
-mkSub t1 _ = empty
+mkSub t1 _ = empty --macht ne subst aus zwei termen, wenn das erste ne var ist
 
-helpOcc :: Term -> Term -> Bool
+helpOcc :: Term -> Term -> Bool --occurs für 2 Terme (basically, ob das erste ne Var ist und im zweiten vorkommt)
 helpOcc (Var x) t2 = occurs x t2
 helpOcc t1 _ = False
 
@@ -171,6 +171,6 @@ isVar _ = False
 
 
 -- Run all tests
-return []
+return [] --sehe ich das richtig, dass das return [] die main monade escaped und daher defs mit seiteneffekten möglich werden, oder warum ist das return da? Die Fehlermeldung hilft mir nicht wirklich, wenn ich es nicht tue. Außer dass ich mir dachte, dass das not used daher kommt, dass die funktion nie in der main monade ankommt? VERWIRRUNG
 testUnification :: IO Bool
 testUnification = $quickCheckAll
