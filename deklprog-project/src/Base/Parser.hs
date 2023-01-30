@@ -28,7 +28,7 @@ instance Parse Prog where
   parse = simpleParse prog
 
 -- Try to parse a file
-parseFile :: Parse a => FilePath -> IO (Either String a)
+parseFile :: (Parse a, Show a) => FilePath -> IO (Either String a)
 parseFile fn =
   let f = reverse . dropWhile (== ' ')
   in catch (parse <$> readFile (f (f fn)))

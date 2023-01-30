@@ -20,34 +20,39 @@ import Data.List hiding (findIndex)
 data SLDTree = SLDTree Goal [(Subst, SLDTree)]
   deriving (Show)
 
+-- sld :: Prog -> Goal -> SLDTree
+-- sld (Prog []) g = SLDTree g [] --leeres Prog, aber goal nicht also ist es ein clash
+-- sld p (Goal []) = SLDTree (Goal []) [] --leeres goal, aber prog nicht, also success              (wenn beides leer ist, ist es auch success)
+-- sld p g = sldHelp p g [] --hilfsfunktion, weil man die VarNames mitführen muss
+
+-- sldHelp :: Prog -> Goal -> [VarName] -> SLDTree
+-- sldHelp (Prog []) g vars = SLDTree g []
+-- sldHelp p (Goal []) vars = SLDTree (Goal []) [] --pattern match wie bei sld
+-- sldHelp (Prog [Rule r rs]) (Goal [t]) vars = if isJust (unify r t) then SLDTree (Goal []) [(mkUni(unify r t), sldHelp (Prog [rename vars (Rule r rs)]) (Goal []) (vars ++ allVars (Rule r rs)))] else SLDTree (Goal [t]) [] --wenn unify nicht Nothing, dann Rekursiv weiter den sldbaum aufbauen, sonst halt den Baum returnen
+-- sldHelp (Prog ((Rule r rs):rx)) (Goal [t]) vars = if isJust (unify r t)
+--                                                   then SLDTree (Goal []) [(mkUni(unify r t), sldHelp (Prog (renameList vars (Rule r rs:rx))) (Goal []) (vars ++ allVars (Rule r rs)))] --success
+--                                                   else SLDTree (Goal [t]) [] --clash
+-- sldHelp (Prog [Rule r rs]) (Goal (t:ts)) vars =   if isJust (unify r t)
+--                                                   then SLDTree (Goal ts) [(mkUni(unify r t), sldHelp (Prog (renameList vars [Rule r rs])) (Goal ts) (vars ++ allVars (Rule r rs)))]
+--                                                   else SLDTree (Goal (t:ts)) [] -- clash
+-- sldHelp (Prog ((Rule r rs):rx)) (Goal (t:ts)) vars =  if isJust (unify r t)
+--                                                         then SLDTree (Goal ts) [(mkUni(unify r t), sldHelp (Prog (renameList vars (Rule r rs:rx))) (Goal ts) (vars ++ allVars (Rule r rs)))] 
+--                                                         else sldHelp (Prog rx) (Goal (t:ts)) vars --pattern matchen für alle Variationen von eingabe Goal/Prog's
+
+-- --rename ist nur für einzelne Rule's definiert, daher hier für [Rule]
+-- renameList :: [VarName] -> [Rule] -> [Rule]
+-- renameList vars r = map (rename vars) r 
+
+-- -- entfernt das Maybe aus Maybe Subst
+-- mkUni :: Maybe Subst -> Subst
+-- mkUni (Just s1) = s1
+-- mkUni Nothing = empty
+
 sld :: Prog -> Goal -> SLDTree
-sld (Prog []) g = SLDTree g [] --leeres Prog, aber goal nicht also ist es ein clash
-sld p (Goal []) = SLDTree (Goal []) [] --leeres goal, aber prog nicht, also success              (wenn beides leer ist, ist es auch success)
-sld p g = sldHelp p g [] --hilfsfunktion, weil man die VarNames mitführen muss
-
-sldHelp :: Prog -> Goal -> [VarName] -> SLDTree
-sldHelp (Prog []) g vars = SLDTree g []
-sldHelp p (Goal []) vars = SLDTree (Goal []) [] --pattern match wie bei sld
-sldHelp (Prog [Rule r rs]) (Goal [t]) vars = if isJust (unify r t) then SLDTree (Goal []) [(mkUni(unify r t), sldHelp (Prog [rename vars (Rule r rs)]) (Goal []) (vars ++ allVars (Rule r rs)))] else SLDTree (Goal [t]) [] --wenn unify nicht Nothing, dann Rekursiv weiter den sldbaum aufbauen, sonst halt den Baum returnen
-sldHelp (Prog ((Rule r rs):rx)) (Goal [t]) vars = if isJust (unify r t)
-                                                  then SLDTree (Goal []) [(mkUni(unify r t), sldHelp (Prog (renameList vars (Rule r rs:rx))) (Goal []) (vars ++ allVars (Rule r rs)))] --success
-                                                  else SLDTree (Goal [t]) [] --clash
-sldHelp (Prog [Rule r rs]) (Goal (t:ts)) vars =   if isJust (unify r t)
-                                                  then SLDTree (Goal ts) [(mkUni(unify r t), sldHelp (Prog (renameList vars [Rule r rs])) (Goal ts) (vars ++ allVars (Rule r rs)))]
-                                                  else SLDTree (Goal (t:ts)) [] -- clash
-sldHelp (Prog ((Rule r rs):rx)) (Goal (t:ts)) vars =  if isJust (unify r t)
-                                                        then SLDTree (Goal ts) [(mkUni(unify r t), sldHelp (Prog (renameList vars (Rule r rs:rx))) (Goal ts) (vars ++ allVars (Rule r rs)))] 
-                                                        else sldHelp (Prog rx) (Goal (t:ts)) vars --pattern matchen für alle Variationen von eingabe Goal/Prog's
-
---rename ist nur für einzelne Rule's definiert, daher hier für [Rule]
-renameList :: [VarName] -> [Rule] -> [Rule]
-renameList vars r = map (rename vars) r 
-
--- entfernt das Maybe aus Maybe Subst
-mkUni :: Maybe Subst -> Subst
-mkUni (Just s1) = s1
-mkUni Nothing = empty
-
+sld (Prog []) g                           = SLDTree g []
+sld p (Goal [])                           = SLDTree (Goal []) []
+sld (Prog ((Rule x xs):rs)) (Goal (t:ts)) = if isNothing (unify x t) && x /= t then SLDTree (Goal (t:ts)) [(empty, sld (Prog rs) (Goal (t:ts)))] 
+                                          else SLDTree (Goal (t:ts)) [(fromJust (unify x t), sld (Prog (Rule x xs:rs)) (Goal (xs ++ ts)))]
 
 type Strategy = SLDTree -> [Subst]
 
@@ -64,7 +69,7 @@ type Strategy = SLDTree -> [Subst]
 -- top St [Top a, st] = a
 
 
-{-
+
 dfs :: Strategy
 dfs tree = dfsHelp tree [[0]] [tree]
 
@@ -175,27 +180,27 @@ bfsHelp (SLDTree g ((sub1,t1):ts)) visited todo = if (hasValidSubTrees (SLDTree 
                                                   else dfsHelp (last todo) visited (reverse (tail (reverse todo)))
 bfsHelp _ _ _ = []
 
--}
+
 -- irgendwie geht dfs/bfs doch leichter als alles was da oben ist ups. Naja und abhängig davon, ob im zweiten arg von der jeweiligen help Funktion
--- die Restliste von Tupeln vorne oder hinten angehängt wird im aufruf, da das durch die Rekursion dann nach LIFO (queue) oder FIFO (stack) abläuft
+-- die Restliste von Tupeln vorne oder hinten angehängt wird im aufruf, da das durch die Rekursion dann nach FIFO (queue) oder LIFO (stack) abläuft
 
 
-dfs :: Strategy
-dfs = dfsHelp []
+-- dfs :: Strategy
+-- dfs = dfsHelp []
  
-dfsHelp :: [Subst] -> SLDTree -> [Subst]
-dfsHelp akku (SLDTree g []) = akku
-dfsHelp akku (SLDTree g ((sub1,t1):ts)) = dfsHelp (akku ++ [sub1]) (SLDTree g (getTupList t1 ++ ts))
+-- dfsHelp :: [Subst] -> SLDTree -> [Subst]
+-- dfsHelp akku (SLDTree g []) = akku
+-- dfsHelp akku (SLDTree g ((sub1,t1):ts)) = dfsHelp (akku ++ [sub1]) (SLDTree g (getTupList t1 ++ ts))
 
-getTupList :: SLDTree -> [(Subst,SLDTree)]
-getTupList (SLDTree g tup) = tup
+-- getTupList :: SLDTree -> [(Subst,SLDTree)]
+-- getTupList (SLDTree g tup) = tup
 
-bfs :: Strategy
-bfs = bfsHelp []
+-- bfs :: Strategy
+-- bfs = bfsHelp []
 
-bfsHelp :: [Subst] -> SLDTree -> [Subst]
-bfsHelp akku (SLDTree g []) = akku
-bfsHelp akku (SLDTree g ((sub1,t1):ts)) = bfsHelp (akku ++ [sub1]) (SLDTree g (ts ++ getTupList t1))
+-- bfsHelp :: [Subst] -> SLDTree -> [Subst]
+-- bfsHelp akku (SLDTree g []) = akku
+-- bfsHelp akku (SLDTree g ((sub1,t1):ts)) = bfsHelp (akku ++ [sub1]) (SLDTree g (ts ++ getTupList t1))
 -- da strategy als Datentyp eine Funktion repräsentiert, kann man das einfach aufrufen.
 solveWith :: Prog -> Goal -> Strategy -> [Subst]
-solveWith p g f = f (sld p g) 
+solveWith p g f = f (sld p g)

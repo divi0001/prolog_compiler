@@ -2,7 +2,8 @@
 
 module Unification
   ( testUnification
-  , unify
+  , unify,
+  ds
   ) where
 
 
@@ -65,8 +66,13 @@ ds :: Term -> Term -> Maybe (Term, Term)
 ds (Var x) (Var y)                        = if x /= y then Just (Var x, Var y) else Nothing
 ds (Var x) (Comb name term)               = Just (Var x, Comb name term) --basic pattern match, exakt nach skript definieren geht nicht so super gut, wie man oben sieht, weil der algorithmus im skript eher imperativ def ist
 ds (Comb name term) (Var x)               = Just (Var x, Comb name term)
-ds (Comb name1 term1) (Comb name2 term2)  = if name1 == name2 && term1 == term2 then Nothing else Just (Comb name1 term1, Comb name2 term2)
+ds (Comb name1 term1) (Comb name2 term2)  = if name1 == name2 && term1 == term2 then Nothing else Just (fromJust (dsMap term1 term2))
 
+dsMap :: [Term] -> [Term] -> Maybe (Term,Term)
+dsMap [(Comb st1 [])] [(Comb st2 [])] = if st1 == st2 then Nothing else Just ((Comb st1 []), (Comb st2 []))
+dsMap [t1] [t2] = Just (t1,t2)
+dsMap (t1:ts1) (t2:ts2) = if ds t1 t2 == Nothing then dsMap ts1 ts2 else Just (t1,t2)
+dsMap _ _ = Nothing
 -- unify :: Term -> Term -> Maybe Subst
 -- unify t11 t21 = h1 t11 t21 (ds t11 t21) empty 
 --   where
@@ -142,16 +148,34 @@ unify :: Term -> Term -> Maybe Subst
 unify t111 t211 = unifyh t111 t211 empty
   where
     unifyh :: Term -> Term -> Subst -> Maybe Subst
-    unifyh (Var x) (Var y) akku = if ds (Var x) (Var y) == Nothing then Just (compose akku (single x (Var y))) else Nothing
-    unifyh (Var x) (Comb st2 t2) akku = if occurs x (Comb st2 t2) then Nothing else Just (single x (Comb st2 t2))
-    unifyh (Comb st1 t1) (Var y) akku = if occurs y (Comb st1 t1) then Nothing else Just (single y (Comb st1 t1))
+    unifyh (Var x) (Var y) akku = if ds (apply akku (Var x)) (apply akku (Var y)) == Nothing then Nothing else Just (compose akku (single x (Var y)))
+    unifyh (Var x) (Comb st2 t2) akku = if occurs x (apply akku (Comb st2 t2)) then Nothing else Just (compose akku (single x (Comb st2 t2)))
+    unifyh (Comb st1 t1) (Var y) akku = if occurs y (apply akku (Comb st1 t1)) then Nothing else Just (compose akku (single y (Comb st1 t1)))
     unifyh (Comb st1 t1) (Comb st2 t2) akku
       | ds (Comb st1 t1) (Comb st2 t2) == Nothing = Just akku
       | isVar (fst (fromJust (ds (apply akku (Comb st1 t1)) (apply akku (Comb st2 t2))))) && helpOcc (Comb st1 t1) (Comb st2 t2) = Just (help (Comb st1 t1) (Comb st2 t2) akku)
+      | isJust (ds (apply akku (Comb st1 t1)) (apply akku (Comb st2 t2))) = if hasMoreDs (apply akku (Comb st1 t1)) (apply akku (Comb st2 t2))
+                                                                            then Just (compose akku (composeDs t1 t2 akku))
+                                                                            else Just (compose akku (mkSub (apply akku (fst(fromJust(dsMap t1 t2)))) (apply akku (snd(fromJust(dsMap t1 t2))))))
       | otherwise = Nothing --unify so weit wie möglich nach skript def
 
+
+hasMoreDs :: Term -> Term -> Bool
+hasMoreDs (Comb st1 t1) (Comb st2 t2) = if length (dsMapp t1 t2) > 1 then True else False
+hasMoreDs _ _  = False
+
+dsMapp :: [Term] -> [Term] -> [(Term,Term)]
+dsMapp [t1] [t2] = [(t1,t2)]
+dsMapp (t1:ts1) (t2:ts2) = if ds t1 t2 == Nothing then dsMapp ts1 ts2 else [(t1,t2)] ++ dsMapp ts1 ts2
+dsMapp _ _ = [(Var (VarName "sollte nie soweit kommen"),Var (VarName "sollte nie soweit kommen2"))]
+
+composeDs :: [Term] -> [Term] -> Subst -> Subst
+composeDs [Var t1] [t2] sub = if occurs t1 (apply sub t2) then empty else single t1 t2
+composeDs (Var t1:ts1) (t2:ts2) sub = if ds (Var t1) t2 == Nothing then composeDs ts1 ts2 sub else compose (single t1 t2) (composeDs ts1 ts2 sub)
+composeDs _ _ _ = empty
+
 help :: Term -> Term -> Subst -> Subst
-help t1 t2 sub = if isVar (fst (fromJust (ds (apply sub t1) (apply sub t2)))) && helpOcc t1 t2 then compose sub (mkSub t1 t2) else empty --richtige Reihenfolge yay :D (entscheidet und composed substs, wenn unifizierbar)
+help t1 t2 sub = if isVar (fst (fromJust (ds (apply sub t1) (apply sub t2)))) && helpOcc t1 t2 then compose sub (mkSub (apply sub t1) (apply sub t2)) else empty --richtige Reihenfolge yay :D (entscheidet und composed substs, wenn unifizierbar)
 
 mkSub :: Term -> Term -> Subst
 mkSub (Var x) t2 = single x t2
